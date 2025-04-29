@@ -33,11 +33,11 @@
       }
 
       shaka.polyfill.installAll();
-      if (shaka.Player.isBrowserSupported()) {
-        initPlayer();
-      } else {
-        alert('Browser not supported!');
-      }
+if (shaka.Player.isBrowserSupported()) {
+  initPlayer();  // <-- هذا هو السطر الذي كان ناقص
+} else {
+  alert('Browser not supported!');
+}
     </script>
   </body>
 </html>
