@@ -1,43 +1,138 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <meta charset="UTF-8" />
-    <title>Stream Player</title>
-    <script src="https://cdn.jsdelivr.net/npm/shaka-player@4.3.5/dist/shaka-player.compiled.js"></script>
+<head>
+    <title>alraqi-tv</title>
     <style>
-      body { margin: 0; background: black; }
-      video { width: 100%; height: 100vh; background: black; }
-    </style>
-  </head>
-  <body>
-    <video id="video" autoplay controls></video>
-    <script>
-      async function initPlayer() {
-        const manifestUri = "https://dokko1new.newkso.ru/dokko1/premium91/mono.m3u8";
-
-        const video = document.getElementById('video');
-        const player = new shaka.Player(video);
-
-        player.getNetworkingEngine().registerRequestFilter(function(type, request) {
-          if (type === shaka.net.NetworkingEngine.RequestType.MANIFEST ||
-              type === shaka.net.NetworkingEngine.RequestType.SEGMENT) {
-            request.headers['Origin'] = 'https://webxzplay.cfd';
-          }
-        });
-
-        try {
-          await player.load(manifestUri);
-        } catch (e) {
-          console.error('Error loading video', e);
+        div a img{visibility:hidden;}
+        body{margin:0;background-color: black;}
+        .shaka-seek-bar-container .shaka-seek-bar {
+            background: linear-gradient(to right, #051937, #00205b, #00247e, #22229f, #510dbc);
         }
-      }
+        .shaka-volume-bar-container .shaka-volume-bar {
+            background: linear-gradient(to right, #051937, #00205b, #00247e, #22229f, #510dbc);
+        }
+        .shaka-video-container .material-icons-round {
+            color: #00abe2;
+        }
+        .shaka-spinner-path {
+            stroke-dasharray: 1, 2000;
+            stroke-dashoffset: 0;
+            animation: dash 1.5s ease-in-out infinite, color 6s ease-in-out infinite;
+            stroke-linecap: round;
+        }
+        @keyframes color {
+            100%, 0% { stroke: #d62d20; }
+            40% { stroke: #0057e7; }
+            66% { stroke: #008744; }
+            80%, 90% { stroke: #ffa700; }
+        }
+        
+        /* Ø¥Ø¶Ø§ÙØ© object-fit: fill */
+        #video {
+            object-fit: fill !important;
+            width: 100% !important;
+            height: 100% !important;
+        }
+    </style>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0' />
+    <meta name="referrer" content="no-referrer" />
+    <script src='//cdnjs.cloudflare.com/ajax/libs/shaka-player/4.10.0/shaka-player.ui.min.js' crossorigin='alraqi-tv'></script>
+    <link rel='stylesheet' href='//cdnjs.cloudflare.com/ajax/libs/shaka-player/4.10.0/controls.min.css' crossorigin='alraqi-tv' />
+</head>
+<body>
+    
+    <div data-shaka-player-container style='position:absolute;z-index: -1;top: 0;left: 0;width: 100%; height: 100%;'>
+        <video autoplay data-shaka-player poster="" id='video'></video>
+    </div>
 
-      shaka.polyfill.installAll();
-if (shaka.Player.isBrowserSupported()) {
-  initPlayer();  // <-- هذا هو السطر الذي كان ناقص
-} else {
-  alert('Browser not supported!');
-}
+    <script>
+        // Configuration object
+        var config = {
+            manifestUri: "https://mejarserver.site/test/hdnts.php?id=svc-spo-hd-15-dt",
+            drm: {
+                clearKeys: {
+                    'fa58e7eb3a4d36949c71ac3ef6e869d8':'b799b788cf13c7bbba95426c94879f30'
+                }
+            },
+            ui: {
+                controlPanelElements: ['spacer','rewind','playback_rate','fast_forward','play_pause','mute','volume','time_and_duration','captions','language','quality','fullscreen','statistics','picture_in_picture','skip','cast','share','spacer'],
+                customContextMenu: true,
+                contextMenuElements: ['statistics','ad_statistics'],
+                statisticsList: ['width','height','playTime','bufferingTime','started','playedCompletely'],
+                playbackRates: [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2],
+                fastForwardRates: [2, 4, 8, 1],
+                rewindRates: [-1, -2, -4, -8],
+                volumeBarColors: {base:"rgba(255, 255, 255)",level:"rgba(255,87,34)"},
+                seekBarColors: {base: '#00EC00', buffered: '#ffffff', played: '#ff5722'}
+            },
+            player: {
+                abr: {
+                    defaultBandwidthEstimate: 16888,
+                    enabled: true,
+                    restrictions: {
+                        minHeight: 359,
+                        maxHeight: 720
+                    }
+                }
+            }
+        };
+
+        async function init() {
+            const video = document.getElementById('video');
+            const ui = video['ui'];
+            const controls = ui.getControls();
+            const player = controls.getPlayer();
+            
+            // Apply UI configuration
+            ui.configure(config.ui);
+            
+            window.player = player;
+            window.ui = ui;
+            
+            player.setTextTrackVisibility(true);
+            player.configure({
+                drm: config.drm,
+                abr: config.player.abr
+            });
+            
+            // ØªØ£ÙƒÙŠØ¯ ØªØ·Ø¨ÙŠÙ‚ object-fit: fill
+            video.style.objectFit = 'fill';
+            video.style.width = '100%';
+            video.style.height = '100%';
+            
+            player.addEventListener('error', onPlayerErrorEvent);
+            controls.addEventListener('error', onUIErrorEvent);
+            
+            try {
+                await player.load(config.manifestUri);
+                console.log('The video has now been loaded!');
+            } catch (error) {
+                onPlayerError(error);
+            }
+        }
+
+        function onPlayerErrorEvent(errorEvent) {
+            onPlayerError(event.detail);
+        }
+
+        function onPlayerError(error) {
+            console.error('Error code', error.code, 'object', error);
+            // Auto-retry after 30 seconds
+            setTimeout(() => {
+                window.location.reload();
+            }, 30000);
+        }
+
+        function onUIErrorEvent(errorEvent) {
+            onPlayerError(event.detail);
+        }
+
+        function initFailed(errorEvent) {
+            console.error('Unable to load the UI library!');
+        }
+
+        document.addEventListener('shaka-ui-loaded', init);
+        document.addEventListener('shaka-ui-load-failed', initFailed);
     </script>
-  </body>
+</body>
 </html>
